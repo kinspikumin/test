@@ -43,7 +43,6 @@
   const ctx = canvas.getContext("2d");
   let drawing = false;
 
-  // Mouse & touch events
   canvas.onmousedown = () => drawing = true;
   canvas.onmouseup = () => drawing = false;
   canvas.onmousemove = (e) => {
@@ -63,20 +62,16 @@
 
   // 🚀 Submit drawing
   async function submitDrawing() {
-    const dataURL = canvas.toDataURL(); // convert canvas to image
-
-    // Save image to Firebase Storage
+    const dataURL = canvas.toDataURL();
     const ref = storage.ref("drawings/" + Date.now());
     await ref.putString(dataURL, "data_url");
     const url = await ref.getDownloadURL();
 
-    // Save URL + timestamp to Firestore
     await db.collection("drawings").add({
       imageUrl: url,
       createdAt: Date.now()
     });
 
-    // Clear canvas for next student
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     alert("Drawing submitted!");
   }
