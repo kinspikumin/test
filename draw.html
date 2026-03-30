@@ -73,26 +73,48 @@
 
   clearBtn.addEventListener("click", () => ctx.clearRect(0, 0, canvas.width, canvas.height));
 
-  // Mouse events
-  canvas.onmousedown = () => drawing = true;
-  canvas.onmouseup = () => drawing = false;
-  canvas.onmousemove = e => {
-    if (!drawing) return;
-    ctx.fillStyle = erasing ? "#FFFFFF" : brushColor;
-    ctx.fillRect(e.offsetX, e.offsetY, brushSize, brushSize);
-  };
+  // Smooth drawing with mouse
+  canvas.addEventListener("mousedown", e => {
+    drawing = true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+  });
 
-  // Touch events for iPad
-  canvas.addEventListener("touchstart", e => { drawing = true; });
-  canvas.addEventListener("touchend", e => { drawing = false; });
+  canvas.addEventListener("mousemove", e => {
+    if (!drawing) return;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = erasing ? "#FFFFFF" : brushColor;
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+  });
+
+  canvas.addEventListener("mouseup", () => drawing = false);
+  canvas.addEventListener("mouseleave", () => drawing = false);
+
+  // Smooth drawing with touch (iPad)
+  canvas.addEventListener("touchstart", e => {
+    drawing = true;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    ctx.beginPath();
+    ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+  });
+
   canvas.addEventListener("touchmove", e => {
     if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
-    ctx.fillStyle = erasing ? "#FFFFFF" : brushColor;
-    ctx.fillRect(touch.clientX - rect.left, touch.clientY - rect.top, brushSize, brushSize);
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = erasing ? "#FFFFFF" : brushColor;
+    ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    ctx.stroke();
     e.preventDefault();
   });
+
+  canvas.addEventListener("touchend", () => drawing = false);
+  canvas.addEventListener("touchcancel", () => drawing = false);
 
   // 🚀 Submit drawing
   async function submitDrawing() {
