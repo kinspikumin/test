@@ -1,16 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Draw</title>
+  <title>Draw Your Passion!</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 20px; }
-    canvas { border: 2px solid black; touch-action: none; }
-    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
+    canvas { border: 2px solid black; touch-action: none; margin-top: 10px; }
+    .tools { margin-bottom: 10px; }
+    .tools label, .tools button { margin: 0 5px; }
+    button { padding: 8px 16px; font-size: 14px; }
   </style>
 </head>
 <body>
 
 <h2>Draw Your Passion!</h2>
+
+<div class="tools">
+  <label>Color: <input type="color" id="colorPicker" value="#000000"></label>
+  <label>Size: <input type="range" id="sizePicker" min="1" max="20" value="4"></label>
+  <button id="eraserBtn">Eraser Off</button>
+  <button id="clearBtn">Clear Canvas</button>
+</div>
+
 <canvas id="canvas" width="400" height="400"></canvas>
 <br>
 <button onclick="submitDrawing()">Submit Drawing</button>
@@ -21,7 +31,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <script>
-  // 🔹 Your Firebase config
+  // 🔹 Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyBUGz5l8cL0cJrSslQibdtmrsCgwbYPM0M",
     authDomain: "test-cd72b.firebaseapp.com",
@@ -38,25 +48,49 @@
   const db = firebase.firestore();
   const storage = firebase.storage();
 
-  // 🎨 Drawing logic
+  // 🎨 Canvas setup
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
   let drawing = false;
 
+  // Tools
+  const colorPicker = document.getElementById("colorPicker");
+  const sizePicker = document.getElementById("sizePicker");
+  const eraserBtn = document.getElementById("eraserBtn");
+  const clearBtn = document.getElementById("clearBtn");
+
+  let brushColor = colorPicker.value;
+  let brushSize = parseInt(sizePicker.value);
+  let erasing = false;
+
+  colorPicker.addEventListener("input", e => brushColor = e.target.value);
+  sizePicker.addEventListener("input", e => brushSize = parseInt(e.target.value));
+
+  eraserBtn.addEventListener("click", () => {
+    erasing = !erasing;
+    eraserBtn.textContent = erasing ? "Eraser On" : "Eraser Off";
+  });
+
+  clearBtn.addEventListener("click", () => ctx.clearRect(0, 0, canvas.width, canvas.height));
+
+  // Mouse events
   canvas.onmousedown = () => drawing = true;
   canvas.onmouseup = () => drawing = false;
-  canvas.onmousemove = (e) => {
+  canvas.onmousemove = e => {
     if (!drawing) return;
-    ctx.fillRect(e.offsetX, e.offsetY, 4, 4);
+    ctx.fillStyle = erasing ? "#FFFFFF" : brushColor;
+    ctx.fillRect(e.offsetX, e.offsetY, brushSize, brushSize);
   };
 
+  // Touch events for iPad
   canvas.addEventListener("touchstart", e => { drawing = true; });
   canvas.addEventListener("touchend", e => { drawing = false; });
   canvas.addEventListener("touchmove", e => {
     if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
-    ctx.fillRect(touch.clientX - rect.left, touch.clientY - rect.top, 4, 4);
+    ctx.fillStyle = erasing ? "#FFFFFF" : brushColor;
+    ctx.fillRect(touch.clientX - rect.left, touch.clientY - rect.top, brushSize, brushSize);
     e.preventDefault();
   });
 
