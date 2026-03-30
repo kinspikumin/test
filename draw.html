@@ -74,25 +74,36 @@
 
   clearBtn.addEventListener("click", () => ctx.clearRect(0, 0, canvas.width, canvas.height));
 
+  // ✅ Helper: map touch/mouse coordinates to canvas pixels
+  function getCanvasPos(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
   // Smooth drawing with mouse
   canvas.addEventListener("mousedown", e => {
     drawing = true;
-    lastX = e.offsetX;
-    lastY = e.offsetY;
+    const pos = getCanvasPos(e.clientX, e.clientY);
+    lastX = pos.x;
+    lastY = pos.y;
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
   });
 
   canvas.addEventListener("mousemove", e => {
     if (!drawing) return;
+    const pos = getCanvasPos(e.clientX, e.clientY);
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = erasing ? "#FFFFFF" : brushColor;
-    ctx.quadraticCurveTo(lastX, lastY, e.offsetX, e.offsetY);
+    ctx.quadraticCurveTo(lastX, lastY, pos.x, pos.y);
     ctx.stroke();
-    lastX = e.offsetX;
-    lastY = e.offsetY;
+    lastX = pos.x;
+    lastY = pos.y;
   });
 
   canvas.addEventListener("mouseup", () => drawing = false);
@@ -101,30 +112,24 @@
   // Smooth drawing with touch (iPad)
   canvas.addEventListener("touchstart", e => {
     drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    lastX = touch.clientX - rect.left;
-    lastY = touch.clientY - rect.top;
+    const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
+    lastX = pos.x;
+    lastY = pos.y;
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
   });
 
   canvas.addEventListener("touchmove", e => {
     if (!drawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-
+    const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = erasing ? "#FFFFFF" : brushColor;
-    ctx.quadraticCurveTo(lastX, lastY, x, y);
+    ctx.quadraticCurveTo(lastX, lastY, pos.x, pos.y);
     ctx.stroke();
-
-    lastX = x;
-    lastY = y;
+    lastX = pos.x;
+    lastY = pos.y;
     e.preventDefault();
   });
 
