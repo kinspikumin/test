@@ -66,53 +66,49 @@
 
   colorPicker.addEventListener("input", e => brushColor = e.target.value);
   sizePicker.addEventListener("input", e => brushSize = parseInt(e.target.value));
-
   eraserBtn.addEventListener("click", () => {
     erasing = !erasing;
     eraserBtn.textContent = erasing ? "Eraser On" : "Eraser Off";
   });
-
   clearBtn.addEventListener("click", () => ctx.clearRect(0, 0, canvas.width, canvas.height));
 
-  // ✅ Helper: map touch/mouse coordinates to canvas pixels
-  function getCanvasPos(clientX, clientY) {
+  // ✅ Helper: convert touch to canvas coords
+  function getTouchPos(touch) {
     const rect = canvas.getBoundingClientRect();
     return {
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height)
+      x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+      y: (touch.clientY - rect.top) * (canvas.height / rect.height)
     };
   }
 
-  // Smooth drawing with mouse
+  // ---------------- Mouse drawing ----------------
   canvas.addEventListener("mousedown", e => {
     drawing = true;
-    const pos = getCanvasPos(e.clientX, e.clientY);
-    lastX = pos.x;
-    lastY = pos.y;
+    lastX = e.offsetX;
+    lastY = e.offsetY;
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
   });
 
   canvas.addEventListener("mousemove", e => {
     if (!drawing) return;
-    const pos = getCanvasPos(e.clientX, e.clientY);
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = erasing ? "#FFFFFF" : brushColor;
-    ctx.quadraticCurveTo(lastX, lastY, pos.x, pos.y);
+    ctx.quadraticCurveTo(lastX, lastY, e.offsetX, e.offsetY);
     ctx.stroke();
-    lastX = pos.x;
-    lastY = pos.y;
+    lastX = e.offsetX;
+    lastY = e.offsetY;
   });
 
   canvas.addEventListener("mouseup", () => drawing = false);
   canvas.addEventListener("mouseleave", () => drawing = false);
 
-  // Smooth drawing with touch (iPad)
+  // ---------------- Touch drawing ----------------
   canvas.addEventListener("touchstart", e => {
     drawing = true;
-    const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
+    const pos = getTouchPos(e.touches[0]);
     lastX = pos.x;
     lastY = pos.y;
     ctx.beginPath();
@@ -121,7 +117,7 @@
 
   canvas.addEventListener("touchmove", e => {
     if (!drawing) return;
-    const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
+    const pos = getTouchPos(e.touches[0]);
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -136,18 +132,16 @@
   canvas.addEventListener("touchend", () => drawing = false);
   canvas.addEventListener("touchcancel", () => drawing = false);
 
-  // 🚀 Submit drawing
+  // ---------------- Submit to Firebase ----------------
   async function submitDrawing() {
     const dataURL = canvas.toDataURL();
     const ref = storage.ref("drawings/" + Date.now());
     await ref.putString(dataURL, "data_url");
     const url = await ref.getDownloadURL();
-
     await db.collection("drawings").add({
       imageUrl: url,
       createdAt: Date.now()
     });
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     alert("Drawing submitted!");
   }
