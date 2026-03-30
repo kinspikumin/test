@@ -21,7 +21,7 @@
   <button id="clearBtn">Clear Canvas</button>
 </div>
 
-<canvas id="canvas" width="400" height="400"></canvas>
+<canvas id="canvas" width="800" height="800" style="width:400px; height:400px;"></canvas>
 <br>
 <button onclick="submitDrawing()">Submit Drawing</button>
 
@@ -52,6 +52,7 @@
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
   let drawing = false;
+  let lastX = 0, lastY = 0;
 
   // Tools
   const colorPicker = document.getElementById("colorPicker");
@@ -76,17 +77,22 @@
   // Smooth drawing with mouse
   canvas.addEventListener("mousedown", e => {
     drawing = true;
+    lastX = e.offsetX;
+    lastY = e.offsetY;
     ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
+    ctx.moveTo(lastX, lastY);
   });
 
   canvas.addEventListener("mousemove", e => {
     if (!drawing) return;
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.strokeStyle = erasing ? "#FFFFFF" : brushColor;
-    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.quadraticCurveTo(lastX, lastY, e.offsetX, e.offsetY);
     ctx.stroke();
+    lastX = e.offsetX;
+    lastY = e.offsetY;
   });
 
   canvas.addEventListener("mouseup", () => drawing = false);
@@ -97,19 +103,28 @@
     drawing = true;
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
+    lastX = touch.clientX - rect.left;
+    lastY = touch.clientY - rect.top;
     ctx.beginPath();
-    ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    ctx.moveTo(lastX, lastY);
   });
 
   canvas.addEventListener("touchmove", e => {
     if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.strokeStyle = erasing ? "#FFFFFF" : brushColor;
-    ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    ctx.quadraticCurveTo(lastX, lastY, x, y);
     ctx.stroke();
+
+    lastX = x;
+    lastY = y;
     e.preventDefault();
   });
 
